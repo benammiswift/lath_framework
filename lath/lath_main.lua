@@ -6,6 +6,7 @@ lath = { --Main object
     },
 };
 
+
 --Grab the Update function.
 function Update(dt)
     lath.update(dt); --Provide an update function that happens every tick
@@ -39,7 +40,7 @@ function Update(dt)
         
         (t.updateCallback or stub)(t.current);
         if t.current == t.target then
-            t.completionCallback(t.current);
+            (t.completionCallback or stub)(t.current);
             lath.timer.pop(name);
         end
     end
@@ -49,6 +50,14 @@ end
 function lath.registerUpdate(interval, callback)
     table.insert(lath.updates, { ['Update'] = callback, ['timer'] = 0, ['interval'] = interval} );
 end
+
+
+------------------
+
+--  TIMER SECTION
+
+------------------
+
 
 --Pushes a timer onto the stack
 lath.timer.push = function (name, current, target, speedMultiplier, completionCallback, updateCallback)
@@ -83,5 +92,46 @@ lath.timer.setTimeout = function (name, timeout, callback, updateCallback)
     lath.timer.push(name, 0, timeout, 1, callback, updateCallback);
 end
 
+
+------------------
+
+--  CLOCK SECTION
+
+------------------
+
+
+lath.Time = function (formatter)
+    local timeOfDay = SysCall("ScenarioManager:GetTimeOfDay")
+    local hours = math.floor(timeOfDay / 3600)
+    local minutes = math.floor(lath.modulo(timeOfDay, 3600) / 60)
+    local seconds = lath.modulo(timeOfDay, 60)
+
+    formatter = string.gsub(formatter, "H", string.format("%02d", hours))
+    formatter = string.gsub(formatter, "M", string.format("%02d", minutes))
+    formatter = string.gsub(formatter, "S", string.format("%02d", seconds))
+
+    return formatter
+end
+
+
+
+
+
+
+
+
+
+
+------------------
+
+--  LIBRARY SECTION
+
+------------------
+
+lath.modulo = function (a, b)
+    return a - math.floor(a / b) * b
+end
+
 function stub()
 end
+
