@@ -4,6 +4,10 @@ lath = { --Main object
         stack = {},
         stackSize = 0,
     },
+    rvParse = {
+        DELIM = '|',
+
+    }
 };
 
 
@@ -99,7 +103,7 @@ end
 
 ------------------
 
-
+--Allows you to get a formatted version of the current game time (similar in concept to the Date() function in PHP)
 lath.Time = function (formatter)
     local timeOfDay = SysCall("ScenarioManager:GetTimeOfDay")
     local hours = math.floor(timeOfDay / 3600)
@@ -114,12 +118,53 @@ lath.Time = function (formatter)
 end
 
 
+------------------
 
+--  RV NUMBER PARSING SECTION
 
+------------------
 
+--Pulls the RV number and returns a table of the arguments in the RV number
+lath.rvParse.parse = function ()
+    local inputString = Call('GetRVNumber')
+    local result = {}
+    local startIdx = 1
 
+    while true do
+        --find where the delimiter is
+        local delimIdx = string.find(inputString, lath.rvParse.DELIM, startIdx, true)
 
+        if delimIdx then
+            --pull this substring and find the equals
+            local pair = string.sub(inputString, startIdx, delimIdx - 1)
+            local eqIdx = string.find(pair, "=", 1, true)
 
+            --On successful = parse, pull the substrings
+            if eqIdx then
+                local key = string.sub(pair, 1, eqIdx - 1)
+                local value = string.sub(pair, eqIdx + 1)
+                --Store and convert to number where possible
+                result[key] = tonumber(value) or value
+            end
+            --Move along le string
+            startIdx = delimIdx + 1
+        else
+
+            --As above
+            local pair = string.sub(inputString, startIdx)
+            local eqIdx = string.find(pair, "=", 1, true)
+
+            if eqIdx then
+                local key = string.sub(pair, 1, eqIdx - 1)
+                local value = string.sub(pair, eqIdx + 1)
+                result[key] = tonumber(value) or value
+            end
+
+            break
+        end
+    end
+    return result
+end
 
 
 ------------------
@@ -128,10 +173,12 @@ end
 
 ------------------
 
+-- replacement for the missing % operator
 lath.modulo = function (a, b)
     return a - math.floor(a / b) * b
 end
 
+--Stub function used to or functions that may be nil
 function stub()
 end
 
