@@ -7,7 +7,14 @@ lath = { --Main object
     rvParse = {
         DELIM = '|',
 
-    }
+    },
+    persist = {
+        CONTROL = 'lathPersist',
+        BASE_PATH = 'plugins/lath/persist/',
+        EXT = '.lua'
+    },
+    store = {},
+    ltn = {},
 };
 
 
@@ -182,3 +189,83 @@ end
 function stub()
 end
 
+------------------
+
+--  STORE PERSIST SECTION
+
+------------------
+
+
+--Adopt the TS functions and provide an api
+function OnSave()
+    (lath.onSave or stub)()
+    lath.persist.dump()
+end
+
+function OnResume()
+    (lath.onResume or stub)()
+    lath.persist.load()
+end
+
+lath.persist.dump = function ()
+    ltnString = lath.ltn.stringify(lath.store);
+    local filename = os.time()
+    file = io.open( lath.persist.BASE_PATH .. filename .. lath.persist.EXT, 'w');
+    if (not file) then
+        SysCall("ScenarioManager:ShowAlertMessageExt", "Lath Error", 'Failed to open file for writing', 5, 0);
+        return
+    end
+    Call("SetControlValue", lath.persist.CONTROL, 0, filename)
+    file:write(ltnString);
+    file:close();
+end
+
+--Function to load the store from the file as saved
+lath.persist.load = function ()
+    local filename = Call("GetControlValue", lath.persist.CONTROL, 0)
+    file = io.open( lath.persist.BASE_PATH .. filename .. lath.persist.EXT, 'r');
+    if (not file) then
+        SysCall("ScenarioManager:ShowAlertMessageExt", "Lath Error", 'Failed to open file for reading', 5, 0);
+        return
+    end
+    local readData = file:read("*all");
+    file:close();
+    local f = loadstring(readData)
+    lath.store = f();
+end
+
+--Pass in a table to be stringified
+function lath.ltn.stringify(tbl)
+    local result = {}
+    local index = 1  -- To keep track of the current index in the 'result' table
+
+    local function serializeInternal(tbl, indent)
+        --Loop through the stuff where we are
+        for k, v in pairs(tbl) do
+            --Some stuff
+            local key = type(k) == "number" and "[" .. k .. "]" or "['" .. tostring(k) .. "']"
+            local valueType = type(v)
+            
+            --Handle types
+            if valueType == "table" then
+                --Store the thing and recurse for tables
+                result[index] = string.rep(" ", indent) .. key .. " = {"
+                index = index + 1
+                serializeInternal(v, indent + 2)
+                result[index] = string.rep(" ", indent) .. "},"
+            elseif valueType == "string" then
+                result[index] = string.rep(" ", indent) .. key .. " = '" .. v .. "',"
+            else
+                result[index] = string.rep(" ", indent) .. key .. " = " .. tostring(v) .. ","
+            end
+            index = index + 1
+        end
+    end
+    
+    result[index] = "return {"
+    index = index + 1
+    serializeInternal(tbl, 2)
+    result[index] = "}"
+    
+    return table.concat(result, "\n") --Join that lot together
+end
