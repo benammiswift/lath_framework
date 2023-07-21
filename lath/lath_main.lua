@@ -15,6 +15,9 @@ lath = { --Main object
     },
     store = {},
     ltn = {},
+    event = {
+        events = {},
+    },
 };
 
 
@@ -195,7 +198,6 @@ end
 
 ------------------
 
-
 --Adopt the TS functions and provide an api
 function OnSave()
     (lath.onSave or stub)()
@@ -268,4 +270,65 @@ function lath.ltn.stringify(tbl)
     result[index] = "}"
     
     return table.concat(result, "\n") --Join that lot together
+end
+
+------------------
+
+--  C TRUTHINESS SECTION
+
+------------------
+
+--Provide a simple C truthiness function
+lath.cTruth = function(value)
+
+    map = {
+        [0] = true,
+        [''] = true
+    }
+    return not map['value'];
+end
+
+------------------
+
+--  OCVC EVENT HANDLER SECTION
+
+------------------
+
+--Register a named event to a control value
+lath.event.register = function (control, event, handler)
+    if not lath.event.events[control] then
+        lath.event.events[control] = {};
+    end
+
+    lath.event.events[control][event] = handler;
+end
+
+--Deregister an event from a CV
+lath.event.deregister = function (control, event)
+
+    lath.event.events[control][event] = nil;
+
+    if (getn(lath.event.events[control]) < 1) then
+        lath.event.events[control] = nil;
+    end
+end
+
+--Deregister all events on a CV
+lath.event.deregisterAll = function (control)
+
+    lath.event.events[control] = nil;
+end
+
+--Adopted OCVC
+function OnControlValueChange(name, index, value)
+
+    Call('SetControlValue', name, index, value);
+
+    if (not lath.event.events[name]) then
+        return;
+    end
+
+    for k, v in pairs(lath.event.events[name]) do
+        v(value, name)
+    end
 end
