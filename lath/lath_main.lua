@@ -329,6 +329,6 @@ function OnControlValueChange(name, index, value)
     end
 
     for k, v in pairs(lath.event.events[name]) do
-        v(value, name)
+        v(name, index, value)
     end
 end
