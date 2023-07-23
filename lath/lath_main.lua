@@ -1,5 +1,5 @@
-lath = { --Main object
-    updates = {}, --List of updates
+lath = { --Main container
+    updates = {}, 
     timer = {
         stack = {},
         stackSize = 0,
