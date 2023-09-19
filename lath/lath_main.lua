@@ -337,6 +337,6 @@ end
 Clamp
 -------------
 
-function clamp(value, min, max)
+lath.clamp = function (value, min, max)
     return math.min(math.max(value, min), max)
 end
